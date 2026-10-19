@@ -1,0 +1,12 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Онлайн-бронирование развлечений парка «Сказочная Лагуна»"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 10 10%27%3E%3Ctext y=%27.9em%27 font-size=%278%27%3E🌊%3C/text%3E%3C/svg%3E"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Unbounded:wght@600&display=swap&subset=cyrillic" rel="stylesheet"><link rel="stylesheet" href="/css/style.css"><title>Развлечения — Сказочная Лагуна</title></head><body><header class="top" id="top"></header>
+<main class="section"><div class="wrap"><h1 style="font-size:2rem">Развлечения</h1><div class="bar" id="chips" role="group" aria-label="Категория"></div>
+<p><input id="q" type="search" placeholder="Поиск по названию" aria-label="Поиск по названию" style="max-width:360px"></p><div class="grid" id="list"></div></div></main>
+<footer class="foot" id="foot"></footer><script src="/js/common.js"></script><script>init();
+let cat=new URLSearchParams(location.search).get('category')||'',all=[];
+const draw=()=>{const q=$('#q').value.trim().toLowerCase();
+$('#chips').innerHTML=[['','Все'],...Object.entries(CAT)].map(([k,v])=>'<button class="chip'+(k===cat?' on':'')+'" data-k="'+k+'" aria-pressed="'+(k===cat)+'">'+v+'</button>').join('');
+const l=all.filter(a=>(!cat||a.category===cat)&&(a.title+' '+a.description).toLowerCase().includes(q));
+$('#list').innerHTML=l.map(a=>'<article class="card"><img src="/img/'+esc(a.category)+'.svg" alt=""><div><h3>'+esc(a.title)+'</h3><p>'+esc(a.description)+'</p><a class="btn alt" href="/booking.html?id='+a.id+'">Забронировать</a></div></article>').join('')||'<p class="empty">Ничего не нашлось. Попробуйте другую категорию или запрос.</p>'};
+$('#chips').addEventListener('click',e=>{if(e.target.dataset.k!==undefined){cat=e.target.dataset.k;draw()}});
+$('#q').addEventListener('input',draw);
+api('/api/attractions').then(r=>{all=r;draw()});</script></body></html>

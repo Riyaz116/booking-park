@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Онлайн-бронирование развлечений парка «Сказочная Лагуна»"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 10 10%27%3E%3Ctext y=%27.9em%27 font-size=%278%27%3E🌊%3C/text%3E%3C/svg%3E"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Unbounded:wght@600&display=swap&subset=cyrillic" rel="stylesheet"><link rel="stylesheet" href="/css/style.css"><title>Бронирование — Сказочная Лагуна</title></head><body><header class="top" id="top"></header>
+<main class="section"><div class="wrap" id="app"></div></main>
+<footer class="foot" id="foot"></footer><script src="/js/common.js"></script><script>init().then(async u=>{if(!needAuth(u))return;
+const id=new URLSearchParams(location.search).get('id');let a,types;
+try{[a,types]=await Promise.all([api('/api/attractions/'+id),api('/api/ticket-types')])}catch{$('#app').innerHTML='<p class="empty">Развлечение не найдено. <a href="/attractions.html">Вернуться к списку</a></p>';return}
+const qty={};types.forEach(t=>qty[t.id]=0);const tom=new Date();tom.setDate(tom.getDate()+1);
+$('#app').innerHTML='<div class="book"><form class="panel" id="f"><h1 style="font-size:1.7rem">'+esc(a.title)+'</h1><label class="f">Дата<input type="date" id="d" min="'+ymd(tom)+'" value="'+ymd(tom)+'" required></label><fieldset style="border:0;padding:0;margin:0"><legend style="font-weight:700;margin-bottom:8px">Время</legend><div class="bar" id="slots" style="margin:0"></div></fieldset><div>'+types.map(t=>'<div class="trow"><span>'+esc(t.name)+'<br><small>'+(t.price?rub(t.price):'бесплатно')+'</small></span><span class="step"><button type="button" data-t="'+t.id+'" data-s="-1" aria-label="Меньше: '+esc(t.name)+'">−</button><output id="q'+t.id+'">0</output><button type="button" data-t="'+t.id+'" data-s="1" aria-label="Больше: '+esc(t.name)+'">+</button></span></div>').join('')+'</div><p class="msg" id="msg" role="alert"></p><button class="btn" id="go">Забронировать</button></form><aside class="panel sticky"><img src="/img/'+esc(a.category)+'.svg" alt=""><div><p style="margin:0">'+esc(a.description)+'</p><div>Итого</div><div class="total" id="tot">0 ₽</div></div></aside></div>';
+const recalc=()=>{$('#tot').textContent=rub(types.reduce((s,t)=>s+t.price*qty[t.id],0))};
+async function slots(){const s=await api('/api/attractions/'+a.id+'/slots?date='+$('#d').value);
+$('#slots').innerHTML=s.length?s.map(x=>'<label class="chip"><input type="radio" name="slot" value="'+x.id+'"'+(x.free<=0?' disabled':'')+'>'+x.starts_at.slice(11)+' · мест: '+x.free+'</label>').join(''):'<span>На эту дату сеансов нет. Выберите другую.</span>'}
+$('#d').addEventListener('change',slots);slots();
+$('#f').addEventListener('click',e=>{const t=e.target.dataset.t;if(!t)return;qty[t]=Math.max(0,Math.min(20,qty[t]+Number(e.target.dataset.s)));$('#q'+t).textContent=qty[t];recalc()});
+$('#f').addEventListener('submit',async e=>{e.preventDefault();const msg=$('#msg'),go=$('#go');msg.textContent='';
+const slot=$('input[name=slot]:checked');if(!slot){msg.textContent='Выберите время сеанса.';return}
+const items=types.filter(t=>qty[t.id]>0).map(t=>({ticket_type_id:t.id,quantity:qty[t.id]}));if(!items.length){msg.textContent='Добавьте хотя бы один билет.';return}
+go.disabled=true;
+try{const r=await api('/api/bookings',{method:'POST',body:{slot_id:Number(slot.value),items}});
+$('#app').innerHTML='<div class="empty"><h1 style="font-size:1.8rem">Бронь №'+r.id+' создана</h1><p>Сумма: '+rub(r.total_price)+'. Покажите номер брони на входе.</p><a class="btn alt" href="/my-bookings.html">Мои брони</a></div>'}
+catch(err){msg.textContent=err.message;go.disabled=false;if(err.status===401)needAuth(null);else slots()}});
+});</script></body></html>
